@@ -38,6 +38,10 @@ nosetests.xml
 *.json
 
 # Project
+<<<<<<< HEAD
+src/config.py
+=======
 config.py
+>>>>>>> maxme/master
 old/
 tmp/
