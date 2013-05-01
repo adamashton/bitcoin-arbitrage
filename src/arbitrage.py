@@ -106,21 +106,16 @@ class Arbitrer(object):
                     best_i, best_j = (i, j)
                     best_w_buyprice, best_w_sellprice = (
                         w_buyprice, w_sellprice)
-        return best_profit, best_volume, self.depths[kask]["asks"][best_i]["price"],\
-            self.depths[kbid]["bids"][best_j][
-                "price"], best_w_buyprice, best_w_sellprice
+        return best_profit, best_volume, self.depths[kask]["asks"][best_i]["price"], self.depths[kbid]["bids"][best_j]["price"], best_w_buyprice, best_w_sellprice
 
     def arbitrage_opportunity(self, kask, ask, kbid, bid):
         perc = (bid["price"] - ask["price"]) / bid["price"] * 100
-        profit, volume, buyprice, sellprice, weighted_buyprice,\
-            weighted_sellprice = self.arbitrage_depth_opportunity(kask, kbid)
+        profit, volume, buyprice, sellprice, weighted_buyprice, weighted_sellprice = self.arbitrage_depth_opportunity(kask, kbid)
         if volume == 0 or buyprice == 0:
             return
         perc2 = (1 - (volume - (profit / buyprice)) / volume) * 100
         for observer in self.observers:
-            observer.opportunity(
-                profit, volume, buyprice, kask, sellprice, kbid,
-                perc2, weighted_buyprice, weighted_sellprice)
+            observer.opportunity(profit, volume, ask["price"], kask, bid["price"], kbid, perc2, weighted_buyprice, weighted_sellprice)
 
     def update_depths(self):
         depths = {}
@@ -130,8 +125,9 @@ class Arbitrer(object):
 
     def tickers(self):
         for market in self.markets:
-            logging.debug("ticker: " + market.name + " - " + str(
-                market.get_ticker()))
+            tickerRes = market.get_ticker()
+            logging.debug("%s BUY %.03f @ %.03f SELL %.03f @ %.03f", market.name, tickerRes['ask']['amount'], tickerRes['ask']['price'], tickerRes['bid']['amount'], tickerRes['bid']['price'])
+            #logging.debug("ticker: " + market.name + " - " + str(tickerRes))
 
     def replay_history(self, directory):
         import os
@@ -157,10 +153,9 @@ class Arbitrer(object):
                     continue
                 market1 = self.depths[kmarket1]
                 market2 = self.depths[kmarket2]
-                if market1["asks"] and market2["bids"] and len(market1["asks"]) > 0 and len(market2["bids"]) > 0:
+                if market1["asks"] and market2["bids"] and len(market1["asks"]) > 0 and len(market2["bids"]) > 0:                    
                     if float(market1["asks"][0]['price']) < float(market2["bids"][0]['price']):
-                        self.arbitrage_opportunity(kmarket1, market1[
-                                                   "asks"][0], kmarket2, market2["bids"][0])
+                        self.arbitrage_opportunity(kmarket1, market1["asks"][0], kmarket2, market2["bids"][0])
 
         for observer in self.observers:
             observer.end_opportunity_finder()
